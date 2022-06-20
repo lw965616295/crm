@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zhangsc.dao.customer.CustomerMapper">
+    <resultMap id="rm" type="TCusCustomerCustom">
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="cus_code" property="cusCode" jdbcType="VARCHAR" />
+        <result column="cus_name" property="cusName" jdbcType="VARCHAR" />
+        <result column="leader" property="leader" jdbcType="BIGINT" />
+        <result column="cus_status" property="cusStatus" jdbcType="VARCHAR" />
+        <result column="cus_belong" property="cusBelong" jdbcType="VARCHAR" />
+        <result column="address" property="address" jdbcType="VARCHAR" />
+        <result column="info_from" property="infoFrom" jdbcType="VARCHAR" />
+        <result column="cus_grade" property="cusGrade" jdbcType="INTEGER" />
+        <result column="staff_num" property="staffNum" jdbcType="VARCHAR" />
+        <result column="remark" property="remark" jdbcType="VARCHAR" />
+        <result column="create_by" property="createBy" jdbcType="BIGINT" />
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+        <result column="modify_time" property="modifyTime" jdbcType="TIMESTAMP" />
+        <result column="status" property="status" jdbcType="INTEGER" />
+        <result column="islocked" property="islocked" jdbcType="BIT" />
+        <result column="totop" property="totop" jdbcType="TIMESTAMP" />
+        <result column="ch1" property="ch1" jdbcType="VARCHAR" />
+        <result column="ch2" property="ch2" jdbcType="VARCHAR" />
+        <result column="ch3" property="ch3" jdbcType="VARCHAR" />
+        <result column="leaderName" property="leaderName" jdbcType="VARCHAR" />
+        <result column="createrName" property="createrName" jdbcType="VARCHAR" />
+        <result column="contactName" property="contactName" jdbcType="VARCHAR" />
+        <result column="conPhone" property="conPhone" jdbcType="VARCHAR" />
+        <result column="contactId" property="contactId" jdbcType="BIGINT" />
+        <result column="conCall" property="conCall" jdbcType="VARCHAR" />
+        <result column="dueDay" property="dueDay" jdbcType="INTEGER" />
+        <result column="next_time" property="nextTime" jdbcType="TIMESTAMP" />
+        <result column="content" property="content" jdbcType="VARCHAR" />
+    </resultMap>
+    <select id="query" resultMap="rm" parameterType="TCusCustomerCustom">
+        SELECT
+            tcc.*, tsu.account leaderName,
+            tsu2.account createrName,
+            tct.name contactName,
+            tct.phone conPhone,
+            tct.id contactId,
+            #{dueDay}-DATEDIFF(NOW(),tcc.modify_time) dueDay,
+            follow_plan.content,
+            follow_plan.next_time
+        FROM
+            t_cus_customer tcc
+        LEFT JOIN t_sys_user tsu ON tcc.leader = tsu.id
+        LEFT JOIN t_sys_user tsu2 ON tcc.create_by = tsu2.id
+        LEFT JOIN (
+            SELECT
+            *
+            FROM
+            t_cus_contact
+            WHERE
+            first_contact = 1
+        ) tct on tct.cus_id = tcc.id
+        /*关联跟进日志表*/
+        left join (
+                SELECT
+                *
+                FROM
+                (
+                    SELECT
+                    tfl.*
+                    FROM
+                    t_cus_follow_log tfl
+                    LEFT JOIN t_cus_customer tcc1 ON tcc1.id = tfl.cus_id
+                    WHERE
+                    tcc1. STATUS = 2
+                    AND tfl.is_plan = 1
+                    AND tfl.next_time > DATE_FORMAT(NOW(), '%y%m%d')
+                    AND tcc1.leader = #{leader}
+                    ORDER BY
+                    tfl.next_time
+                ) s
+                GROUP BY
+                s.cus_id) follow_plan on follow_plan.cus_id = tcc.id
+        WHERE
+            1 = 1
+            <if test="status != null">
+                and tcc.status = #{status}
+            </if>
+            <if test="cusRange == 0">
+                <if test="leader != null">
+                    and tcc.leader = #{leader}
+                </if>
+            </if>
+            <if test="cusRange == 1">
+            /*查询下属客户*/
+                and tcc.leader in (
+                    SELECT
+                    t.id
+                    FROM
+                    t_sys_user t
+                    WHERE
+                    t.position_id LIKE #{subPositionId}
+                )
+            </if>
+
+            <if test="cusName != null and cusName != ''">
+                and tcc.cus_name = #{cusName}
+            </if>
+            <if test="cusCode != null and cusCode != ''">
+                and tcc.cus_code = #{cusCode}
+            </if>
+
+            <if test="beginTime !=  null">
+                and DATE_FORMAT(tcc.create_time,'%y-%m-%d') >= DATE_FORMAT(#{beginTime},'%y-%m-%d')
+            </if>
+            <if test="endTime !=  null">
+                and DATE_FORMAT(tcc.create_time,'%y-%m-%d') <![CDATA[<=]]> DATE_FORMAT(#{endTime},'%y-%m-%d')
+            </if>
+            <if test="queryStr != null and queryStr != ''">
+                AND (
+                tcc.cus_code LIKE '%${queryStr}%'
+                OR tcc.cus_name LIKE '%${queryStr}%'
+                OR tcc.leader LIKE '%${queryStr}%'
+                OR tcc.cus_status LIKE '%${queryStr}%'
+                OR tcc.cus_belong LIKE '%${queryStr}%'
+                OR tcc.address LIKE '%${queryStr}%'
+                OR tcc.info_from LIKE '%${queryStr}%'
+                OR tcc.staff_num LIKE '%${queryStr}%'
+                OR tcc.cus_grade LIKE '%${queryStr}%'
+                OR tct.name LIKE '%${queryStr}%'
+                OR tct.Phone LIKE '%${queryStr}%'
+                )
+            </if>
+        order by tcc.totop desc ,tcc.create_time desc
+
+    </select>
+    <insert id="save" parameterType="TCusCustomer" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_cus_customer
+        VALUES
+	    (
+	      #{id},
+	      #{cusCode},
+	      #{cusName},
+	      #{leader},
+	      #{cusStatus},
+	      #{cusBelong},
+	      #{address},
+	      #{infoFrom},
+	      #{cusGrade},
+	      #{staffNum},
+	      #{remark},
+	      #{createBy},
+	      #{createTime},
+	      #{modifyTime},
+	      #{status},
+	      #{islocked},
+	      #{totop},
+	      #{ch1},
+	      #{ch2},
+	      #{ch3}
+	    )
+    </insert>
+    <select id="queryById" parameterType="Long" resultMap="rm">
+        SELECT
+            tcc.*, tsu.account leaderName,
+            tsu2.account createrName,
+            tct.name contactName,
+            tct.phone conPhone,
+            tct.callname conCall,
+            tct.id contactId,
+            follow_plan.content,
+            follow_plan.next_time
+        FROM
+            t_cus_customer tcc
+        LEFT JOIN t_sys_user tsu ON tcc.leader = tsu.id
+        LEFT JOIN t_sys_user tsu2 ON tcc.create_by = tsu2.id
+        LEFT JOIN (
+            SELECT
+            *
+            FROM
+            t_cus_contact
+            WHERE
+            first_contact = 1
+        ) tct on tct.cus_id = tcc.id
+        /*关联跟进日志表*/
+        left join (
+            SELECT
+            tfl.*
+            FROM
+            t_cus_follow_log tfl
+            LEFT JOIN t_cus_customer tcc1 ON tcc1.id = tfl.cus_id
+            WHERE
+            tcc1. STATUS = 2
+            AND tfl.is_plan = 1
+            AND tfl.next_time > DATE_FORMAT(NOW(), '%y%m%d')
+            ORDER BY
+            tfl.next_time
+            LIMIT 1) follow_plan on follow_plan.cus_id = tcc.id
+        WHERE
+            1 = 1
+            and tcc.id = #{id}
+
+    </select>
+    <update id="update" parameterType="TCusCustomer">
+        UPDATE
+          t_cus_customer
+      <set>
+          <if test="cusName != null">
+              cus_name = #{cusName},
+          </if>
+
+          <if test="leader != null">
+              leader = #{leader},
+          </if>
+          <if test="cusStatus != null">
+              cus_status = #{cusStatus},
+          </if>
+          <if test="cusBelong != null">
+              cus_belong = #{cusBelong},
+          </if>
+          <if test="address != null">
+              address = #{address},
+          </if>
+          <if test="infoFrom != null">
+              info_from = #{infoFrom},
+          </if>
+          <if test="cusGrade != null">
+              cus_grade = #{cusGrade},
+          </if>
+          <if test="staffNum != null">
+              staff_num = #{staffNum},
+          </if>
+          <if test="remark != null">
+              remark = #{remark},
+          </if>
+          <if test="createBy != null">
+              create_by = #{createBy},
+          </if>
+          <if test="modifyTime != null">
+              modify_time = #{modifyTime},
+          </if>
+          <if test="status != null">
+              status = #{status},
+          </if>
+          <if test="islocked != null">
+              islocked = #{islocked},
+          </if>
+          <if test="totop != null">
+              totop = #{totop},
+          </if>
+          <if test="ch1 != null">
+              ch1 = #{ch1},
+          </if>
+          <if test="ch2 != null">
+              ch2 = #{ch2},
+          </if>
+          <if test="ch3 != null">
+              ch3 = #{ch3},
+          </if>
+      </set>
+      <where>
+          id = #{id}
+      </where>
+    </update>
+
+    <delete id="delete" parameterType="Long">
+        DELETE FROM
+        t_cus_customer
+        WHERE
+        id = #{id}
+    </delete>
+
+    <select id="queryCusCountDay" resultType="Integer">
+        SELECT
+            count(*)
+        FROM
+            t_cus_customer
+        WHERE
+            DATE_FORMAT(create_time, '%y-%m-%d') = DATE_FORMAT(now(), '%y-%m-%d')
+    </select>
+
+    <update id="antoBack" parameterType="Integer">
+        UPDATE t_cus_customer
+        SET STATUS = 1 ,leader = NULL, islocked = NULL , totop = null
+        WHERE
+        id IN (
+        SELECT
+        id
+        FROM
+        (
+        SELECT
+        t.id
+        FROM
+        t_cus_customer t
+        WHERE
+        t. STATUS = 2 and t.islocked != 1
+        AND DATEDIFF(NOW(), t.modify_time) &gt; #{0}
+        ) a
+        )
+    </update>
+
+    <update id="toPool" parameterType="TCusCustomer">
+        UPDATE t_cus_customer
+        <set>
+            STATUS = #{status} ,leader = NULL, islocked = NULL , totop = null
+        </set>
+        <where>
+            id = #{id}
+        </where>
+    </update>
+
+    <update id="totop" parameterType="TCusCustomer">
+        UPDATE t_cus_customer
+        <set>
+            totop = #{totop}
+        </set>
+        <where>
+            id = #{id}
+        </where>
+    </update>
+
+    <select id="queryCusPlanRemind" resultMap="rm" parameterType="TCusCustomerCustom">
+        SELECT
+        tcc.*, tsu.account leaderName,
+        tsu.email leaderEmail,
+        follow_plan.content,
+        follow_plan.next_time
+        FROM
+        t_cus_customer tcc
+        LEFT JOIN t_sys_user tsu ON tcc.leader = tsu.id
+        /*关联跟进日志表*/
+        left join (
+        SELECT
+        tfl.*
+        FROM
+        t_cus_follow_log tfl
+        LEFT JOIN t_cus_customer tcc1 ON tcc1.id = tfl.cus_id
+        WHERE
+        tcc1. STATUS = 2
+        AND tfl.is_plan = 1
+        AND tfl.next_time > DATE_FORMAT(NOW(), '%y%m%d')
+        ORDER BY
+        tfl.next_time
+        ) follow_plan on follow_plan.cus_id = tcc.id
+        WHERE
+        tcc.status = 2
+        and DATE_FORMAT(follow_plan.next_time, '%y%m%d') = DATE_FORMAT(NOW(), '%y%m%d')
+
+    </select>
+</mapper>

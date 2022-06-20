@@ -1,0 +1,46 @@
+@charset "utf-8";
+/* 你自己的样式 */
+
+/*//////////////////////////////////////////////////////////////////
+[ FONT ]*/
+
+@font-face {
+    font-family: Poppins-Regular;
+    src: url('../js/custom/fonts/poppins/Poppins-Regular.ttf');
+}
+
+@font-face {
+    font-family: Poppins-Bold;
+    src: url('../js/custom/fonts/poppins/Poppins-Bold.ttf');
+}
+
+@font-face {
+    font-family: Poppins-Medium;
+    src: url('../js/custom/fonts/poppins/Poppins-Medium.ttf');
+}
+
+@font-face {
+    font-family: Montserrat-Bold;
+    src: url('../js/custom/fonts/montserrat/Montserrat-Bold.ttf');
+}
+
+/*//////////////////////////////////////////////////////////////////
+  [ RESTYLE TAG ]*/
+
+/* index */
+.index-title {
+    font-family: Poppins-Regular;
+    font-size: 24px;
+}
+
+/* welcome */
+.welcome-title {
+    font-family: Poppins-Bold;
+    font-size: 24px;
+    color: #333333;
+}
+
+.welcome-copyright {
+    font-family: Poppins-Regular;
+    font-size: 13px;
+}

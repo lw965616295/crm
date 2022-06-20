@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zhangsc.dao.customer.FileMapper">
+    <resultMap id="rm" type="TFileCustom">
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="file_name" property="fileName" jdbcType="VARCHAR" />
+        <result column="url" property="url" jdbcType="VARCHAR" />
+        <result column="size" property="size" jdbcType="VARCHAR" />
+        <result column="uploader" property="uploader" jdbcType="BIGINT" />
+        <result column="upload_time" property="uploadTime" jdbcType="TIMESTAMP" />
+        <result column="file_belong" property="fileBelong" jdbcType="VARCHAR" />
+        <result column="belong_id" property="belongId" jdbcType="BIGINT" />
+        <result column="uploaderName" property="uploaderName" jdbcType="VARCHAR" />
+    </resultMap>
+    <select id="query" resultMap="rm" parameterType="TFile">
+        SELECT
+        tf.*, tsu.account uploaderName
+        FROM
+        t_file tf
+        LEFT JOIN t_sys_user tsu ON tsu.id = tf.uploader
+        WHERE
+        1 = 1
+        <if test="fileBelong != null and fileBelong != ''">
+            AND tf.file_belong = #{fileBelong}
+        </if>
+        <if test="belongId != null">
+            AND tf.belong_id = #{belongId}
+        </if>
+        order by tf.upload_time desc
+    </select>
+    <insert id="save" parameterType="TFile">
+        INSERT INTO t_file
+        VALUES
+	    (
+	      #{id},
+	      #{fileName},
+	      #{url},
+	      #{size},
+	      #{uploader},
+	      #{uploadTime},
+	      #{fileBelong},
+	      #{belongId}
+	    )
+
+    </insert>
+    <delete id="delete" parameterType="Long">
+        DELETE FROM
+        t_file
+        WHERE
+        id = #{id}
+    </delete>
+
+    <select id="queryById" resultMap="rm" parameterType="Long">
+        SELECT * FROM
+        t_file
+        WHERE
+        id = #{id}
+    </select>
+</mapper>

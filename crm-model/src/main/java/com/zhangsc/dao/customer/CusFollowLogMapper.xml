@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zhangsc.dao.customer.CusFollowLogMapper">
+    <resultMap id="rm" type="TCusFollowLogCustom">
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="content" property="content" jdbcType="VARCHAR" />
+        <result column="type" property="type" jdbcType="VARCHAR" />
+        <result column="next_time" property="nextTime" jdbcType="TIMESTAMP" />
+        <result column="create_by" property="createBy" jdbcType="BIGINT" />
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+        <result column="cus_id" property="cusId" jdbcType="BIGINT" />
+        <result column="is_plan" property="isPlan" jdbcType="VARCHAR" />
+        <result column="ch1" property="ch1" jdbcType="VARCHAR" />
+        <result column="ch2" property="ch2" jdbcType="VARCHAR" />
+        <result column="ch3" property="ch3" jdbcType="VARCHAR" />
+        <result column="createrName" property="createrName" jdbcType="VARCHAR" />
+        <result column="icon_url" property="iconUrl" jdbcType="VARCHAR" />
+        <result column="contactName" property="contactName" jdbcType="VARCHAR" />
+        <result column="conPhone" property="conPhone" jdbcType="VARCHAR" />
+    </resultMap>
+    <select id="query" resultMap="rm" parameterType="TCusFollowLog">
+        SELECT
+        tfl.*, tsu.account createrName,
+        tsu.icon_url,
+        tcc.name contactName,
+        tcc.phone conPhone
+        FROM
+        t_cus_follow_log tfl
+        LEFT JOIN t_sys_user tsu ON tfl.create_by = tsu.id
+        LEFT JOIN t_cus_contact tcc ON tfl.contact_id = tcc.id
+        where 1=1
+        <if test="cusId != null">
+            and  tfl.cus_id = #{cusId}
+        </if>
+        <if test="isPlan != null and isPlan !=''">
+            and tfl.is_plan = #{isPlan}
+        </if>
+
+        order by tfl.create_time desc
+    </select>
+    <insert id="save" parameterType="TCusFollowLog" keyProperty="id" useGeneratedKeys="true">
+        INSERT INTO t_cus_follow_log
+        VALUES
+        (
+        #{id},
+        #{content},
+        #{type},
+        #{nextTime},
+        #{createBy},
+        #{createTime},
+        #{cusId},
+        #{contactId},
+        #{isPlan},
+        #{ch1},
+        #{ch2},
+        #{ch3}
+        )
+
+    </insert>
+    <delete id="delete" parameterType="Long">
+        DELETE FROM
+        t_cus_follow_log
+        WHERE
+        id = #{id}
+    </delete>
+
+    <delete id="cusPlanDel" parameterType="TCusFollowLog">
+        DELETE FROM
+        t_cus_follow_log
+        WHERE
+        cus_id = #{cusId}
+        AND is_plan = 1
+        AND next_time > now()
+    </delete>
+</mapper>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+    http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
+    http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+    http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.2.xsd
+    http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd">
+	<!-- shiro过滤器工厂 -->
+	<bean name="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+		<!-- 加载安全管理器 -->
+		<property name="securityManager" ref="securityManager"/>
+		<!-- 没有认证时，进行认证 -->
+		<property name="loginUrl" value="/login"/>
+		<!-- <property name="successUrl" value="/welcome.jsp"/> -->
+		<!-- 没有权限 -->
+		<!-- <property name="unauthorizedUrl" value="/WEB-INF/jsp/refuse.jsp"></property> -->
+		<!-- 过滤链 -->
+		<property name="filterChainDefinitions">
+			<value>
+				<!-- 对静态资源设置匿名访问 -->
+				/images/** = anon
+				/js/** = anon
+				/styles/** = anon
+				<!-- 注销操作 -->
+				/logout = logout
+				
+				/index.jsp  = user
+				/welcome.jsp  = user
+				/home = user
+				/** = authc
+			
+			</value>
+		</property>
+	</bean>
+	<!-- 安全管理器 -->
+	<bean name="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+		<property name="realm" ref="customRealm"/>
+		<!-- 缓存管理器 -->
+		<property name="cacheManager" ref="cacheManager"></property>
+		<!-- session管理器 -->
+		<property name="sessionManager" ref="sessionManager"></property>
+		<!-- rememberMe管理器 -->
+		<!--<property name="rememberMeManager" ref="rememberMeManager"></property>-->
+	</bean>
+	
+	<!-- 自定义realm -->
+	<bean name="customRealm" class="com.zhangsc.shiro.CustomRealm"/>
+	
+	<!-- ehcache缓存管理配置 -->
+	<bean name="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+		<property name="cacheManagerConfigFile" value="classpath:shiro-ehcache.xml" />
+	</bean>
+	
+	<!-- session管理器 -->
+	<bean name="sessionManager" class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager">
+		<!-- session的失效时长，单位毫秒 -->
+        <property name="globalSessionTimeout" value="1800000"/>
+        <!-- 删除失效的session -->
+        <property name="deleteInvalidSessions" value="true"/>
+	</bean>
+	
+	<!-- rememberMe管理器 -->
+	<!--<bean id="rememberMeManager" class="org.apache.shiro.web.mgt.CookieRememberMeManager">
+		<property name="cookie" ref="rememberMeCookie" />
+	</bean>-->
+	<!-- 记住我cookie -->
+	<!--<bean id="rememberMeCookie" class="org.apache.shiro.web.servlet.SimpleCookie">
+		&lt;!&ndash; rememberMe是cookie的名字 &ndash;&gt;
+		<constructor-arg value="rememberMe" />
+		&lt;!&ndash; 记住我cookie生效时间30天 &ndash;&gt;
+		<property name="maxAge" value="2592000" />
+	</bean>-->
+	
+</beans>
